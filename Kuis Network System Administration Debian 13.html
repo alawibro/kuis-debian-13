@@ -1,0 +1,1272 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kuis Administrasi Sistem Jaringan - Debian 13</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        debian: {
+                            red: '#d70a53',
+                            dark: '#0f172a',
+                            card: '#1e293b',
+                            accent: '#38bdf8'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col justify-between selection:bg-rose-500 selection:text-white">
+
+    <!-- Header / Navbar -->
+    <header class="bg-slate-900/80 backdrop-blur-md border-b border-slate-800 sticky top-0 z-30">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-rose-600 to-red-500 flex items-center justify-center shadow-lg shadow-rose-900/30">
+                    <i class="fa-solid font-bold text-white text-xl">🌀</i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
+                        Kuis Network System Admin
+                    </h1>
+                    <p class="text-xs text-rose-400 font-medium">Debian 13 (Trixie) Prep Suite</p>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-2 sm:space-x-4">
+                <!-- Sound Toggle Button -->
+                <button id="soundToggleBtn" onclick="toggleSound()" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition text-sm flex items-center gap-1" title="Toggle Suara">
+                    <i id="soundIcon" class="fa-solid fa-volume-high text-emerald-400"></i>
+                </button>
+
+                <!-- High Score Badge -->
+                <div class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-semibold">
+                    <i class="fa-solid fa-trophy text-amber-400"></i>
+                    <span>Skor Tertinggi: <span id="topScoreDisplay">0</span>%</span>
+                </div>
+
+                <!-- Open Grid Drawer Button -->
+                <button onclick="toggleGridModal()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-xs font-medium flex items-center gap-2 transition">
+                    <i class="fa-solid fa-th-large text-sky-400"></i>
+                    <span class="hidden sm:inline">Navigasi Soal</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="max-w-4xl w-full mx-auto px-4 py-6 flex-1 flex flex-col justify-center">
+
+        <!-- Top Status Bar & Filters (Visible during quiz) -->
+        <div id="quizHeader" class="hidden mb-6 bg-slate-900/60 p-4 rounded-2xl border border-slate-800 backdrop-blur">
+            <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-3">
+                <!-- Progress Text -->
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-semibold uppercase tracking-wider text-sky-400 px-2.5 py-1 bg-sky-950/60 border border-sky-800/50 rounded-md" id="categoryBadge">
+                        Kategori
+                    </span>
+                    <span class="text-xs text-slate-400" id="questionProgressText">Soal 1 dari 50</span>
+                </div>
+
+                <!-- Timer & Mode Status -->
+                <div class="flex items-center gap-4">
+                    <div id="timerContainer" class="flex items-center gap-2 text-rose-400 bg-rose-950/30 px-3 py-1 rounded-lg border border-rose-900/40 text-xs font-mono font-bold">
+                        <i class="fa-regular fa-clock animate-pulse"></i>
+                        <span id="timerText">00:00</span>
+                    </div>
+                    <span id="modeBadge" class="text-xs font-medium px-2.5 py-1 rounded-md bg-slate-800 text-slate-300 border border-slate-700">
+                        Mode Ujian
+                    </span>
+                </div>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                <div id="progressBar" class="bg-gradient-to-r from-sky-500 to-rose-500 h-full w-0 transition-all duration-300"></div>
+            </div>
+        </div>
+
+        <!-- START SCREEN -->
+        <div id="startScreen" class="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 sm:p-10 text-center shadow-2xl relative overflow-hidden backdrop-blur">
+            <div class="absolute -top-24 -left-24 w-48 h-48 bg-rose-500/10 rounded-full blur-3xl pointer-events-none"></div>
+            <div class="absolute -bottom-24 -right-24 w-48 h-48 bg-sky-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+            <div class="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700 flex items-center justify-center text-3xl shadow-inner text-rose-500">
+                <i class="fa-solid fa-server"></i>
+            </div>
+
+            <h2 class="text-2xl sm:text-3xl font-extrabold text-white mb-3">
+                Uji Pemahaman Administrasi Sistem Jaringan
+            </h2>
+            <p class="text-slate-400 text-sm max-w-lg mx-auto mb-8 leading-relaxed">
+                Evaluasi pengetahuan komprehensif Anda tentang konfigurasi Debian 13 (Virtualisasi, deb822, DHCP, Router nftables, BIND9, PXE, LAMP, FTPS, Mail Server). Total 50 soal active recall.
+            </p>
+
+            <!-- Mode Selection Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8 text-left max-w-2xl mx-auto">
+                <label onclick="selectMode('practice')" id="modeOptPractice" class="cursor-pointer bg-slate-800/60 hover:bg-slate-800 border-2 border-slate-700 p-4 rounded-2xl transition flex items-start gap-3">
+                    <input type="radio" name="quizMode" value="practice" class="mt-1 accent-sky-500">
+                    <div>
+                        <div class="font-bold text-sm text-sky-400 flex items-center gap-1.5">
+                            <i class="fa-solid fa-graduation-cap"></i> Mode Latihan
+                        </div>
+                        <p class="text-xs text-slate-400 mt-1">Pembahasan langsung muncul setelah memilih jawaban. Tanpa batas waktu.</p>
+                    </div>
+                </label>
+
+                <label onclick="selectMode('exam')" id="modeOptExam" class="cursor-pointer bg-slate-800/60 hover:bg-slate-800 border-2 border-sky-500/80 p-4 rounded-2xl transition flex items-start gap-3">
+                    <input type="radio" name="quizMode" value="exam" checked class="mt-1 accent-rose-500">
+                    <div>
+                        <div class="font-bold text-sm text-rose-400 flex items-center gap-1.5">
+                            <i class="fa-solid fa-stopwatch"></i> Mode Simulasi Ujian
+                        </div>
+                        <p class="text-xs text-slate-400 mt-1">Menggunakan timer. Hasil dan analisis jawaban ditampilkan di akhir ujian.</p>
+                    </div>
+                </label>
+            </div>
+
+            <!-- Category Filter Dropdown -->
+            <div class="max-w-xs mx-auto mb-8 text-left">
+                <label class="block text-xs font-semibold text-slate-400 mb-2 text-center uppercase tracking-wider">Pilih Filter Topik Materi:</label>
+                <select id="categoryFilter" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-xs text-slate-200 font-medium focus:outline-none focus:border-sky-500 transition">
+                    <option value="ALL">Semua Topik (50 Soal)</option>
+                    <option value="Virtualisasi">1. Virtualisasi & VirtualBox</option>
+                    <option value="APT & Repositori">2. Repositori deb822 & APT</option>
+                    <option value="Jaringan & IP">3. Konfigurasi Jaringan & IP Statis</option>
+                    <option value="DHCP Server">4. DHCP Server (isc-dhcp-server)</option>
+                    <option value="Router & Firewall">5. Router, Sysctl & nftables</option>
+                    <option value="DNS Server">6. DNS Server (BIND9)</option>
+                    <option value="PXE Boot">7. PXE Boot & TFTP Server</option>
+                    <option value="LAMP & SSL">8. LAMP Stack & SSL CA</option>
+                    <option value="FTPS Server">9. FTPS Server (vsftpd)</option>
+                    <option value="Mail Server">10. Mail Server (Postfix & Dovecot)</option>
+                </select>
+            </div>
+
+            <!-- Start Button -->
+            <button onclick="startQuiz()" class="w-full sm:w-auto px-10 py-3.5 bg-gradient-to-r from-rose-600 to-red-500 hover:from-rose-500 hover:to-red-400 text-white font-bold rounded-xl shadow-lg shadow-rose-900/40 hover:shadow-rose-900/60 transition transform active:scale-95 text-sm flex items-center justify-center gap-2 mx-auto">
+                <i class="fa-solid fa-play"></i>
+                Mulai Kuis Sekarang
+            </button>
+        </div>
+
+        <!-- QUESTION CARD -->
+        <div id="questionCard" class="hidden bg-slate-900/90 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl relative backdrop-blur">
+            
+            <!-- Question Box -->
+            <div class="mb-6">
+                <h3 id="questionText" class="text-base sm:text-lg font-bold text-slate-100 leading-relaxed mb-2">
+                    <!-- Question text injected here -->
+                </h3>
+            </div>
+
+            <!-- Options Grid -->
+            <div id="optionsContainer" class="space-y-3 mb-6">
+                <!-- Option buttons injected dynamically -->
+            </div>
+
+            <!-- Explanation Box (Practice mode or during review) -->
+            <div id="explanationBox" class="hidden p-4 rounded-xl bg-slate-950 border border-slate-800 mb-6 text-xs leading-relaxed animate-fade-in">
+                <div class="font-bold text-sky-400 mb-1 flex items-center gap-1.5">
+                    <i class="fa-solid fa-circle-info"></i> Pembahasan:
+                </div>
+                <div id="explanationText" class="text-slate-300"></div>
+            </div>
+
+            <!-- Navigation Buttons -->
+            <div class="flex items-center justify-between gap-3 border-t border-slate-800/80 pt-5">
+                <button id="prevBtn" onclick="navigateQuestion(-1)" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl border border-slate-700 transition flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed">
+                    <i class="fa-solid fa-arrow-left"></i>
+                    Sebelumnya
+                </button>
+
+                <div class="flex items-center gap-2">
+                    <button id="flagBtn" onclick="toggleBookmarkCurrent()" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-amber-400 text-xs rounded-xl border border-slate-700 transition" title="Tandai Soal Ini">
+                        <i class="fa-regular fa-bookmark" id="flagIcon"></i>
+                    </button>
+
+                    <button id="nextBtn" onclick="navigateQuestion(1)" class="px-5 py-2 bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold rounded-xl transition flex items-center gap-1.5 shadow-md shadow-sky-900/30">
+                        Selanjutnya
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+
+                    <button id="submitQuizBtn" onclick="confirmFinishQuiz()" class="hidden px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition flex items-center gap-1.5 shadow-md shadow-emerald-900/30">
+                        <i class="fa-solid fa-check-double"></i>
+                        Selesai Kuis
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- RESULT / EVALUATION DASHBOARD -->
+        <div id="resultScreen" class="hidden bg-slate-900/90 border border-slate-800 rounded-3xl p-6 sm:p-10 shadow-2xl relative backdrop-blur">
+            <div class="text-center mb-8">
+                <div id="scoreBadgeIcon" class="w-20 h-20 mx-auto mb-4 rounded-full flex items-center justify-center text-3xl font-extrabold border-4">
+                    <!-- Icon inserted dynamically -->
+                </div>
+                <h2 class="text-2xl sm:text-3xl font-extrabold text-white mb-1" id="resultTitle">Hasil Evaluasi Kuis</h2>
+                <p class="text-xs text-slate-400" id="resultSubtitle">Berikut rekapitulasi performa pemahaman Anda</p>
+            </div>
+
+            <!-- Score Cards Stats Grid -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
+                <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 text-center">
+                    <div class="text-xs text-slate-400 font-medium mb-1">Skor Akhir</div>
+                    <div class="text-2xl font-black text-rose-400" id="finalScoreVal">0%</div>
+                </div>
+                <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 text-center">
+                    <div class="text-xs text-slate-400 font-medium mb-1">Jawaban Benar</div>
+                    <div class="text-2xl font-black text-emerald-400" id="correctCountVal">0</div>
+                </div>
+                <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 text-center">
+                    <div class="text-xs text-slate-400 font-medium mb-1">Jawaban Salah</div>
+                    <div class="text-2xl font-black text-rose-500" id="wrongCountVal">0</div>
+                </div>
+                <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 text-center">
+                    <div class="text-xs text-slate-400 font-medium mb-1">Waktu Tempuh</div>
+                    <div class="text-2xl font-black text-sky-400 font-mono" id="timeTakenVal">00:00</div>
+                </div>
+            </div>
+
+            <!-- Review Answer Accordion / Filter List -->
+            <div class="mb-8">
+                <div class="flex justify-between items-center mb-4">
+                    <h4 class="font-bold text-sm text-slate-200">Pembahasan & Evaluasi Detail Soal:</h4>
+                    <span class="text-xs text-slate-400" id="reviewCountText">50 Soal</span>
+                </div>
+
+                <div id="reviewContainer" class="space-y-3 max-h-80 overflow-y-auto pr-1">
+                    <!-- Review items generated dynamically -->
+                </div>
+            </div>
+
+            <!-- Action buttons -->
+            <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                <button onclick="resetToStartScreen()" class="px-6 py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs rounded-xl border border-slate-700 transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-rotate-left"></i>
+                    Coba Kuis Lagi
+                </button>
+                <button onclick="reviewInCardMode()" class="px-6 py-3 bg-sky-600 hover:bg-sky-500 text-white font-semibold text-xs rounded-xl transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-eye"></i>
+                    Tinjau Ulang Soal per Kartu
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- QUESTION NAVIGATION GRID MODAL -->
+    <div id="gridModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 w-full max-w-xl rounded-3xl p-6 shadow-2xl flex flex-col max-h-[85vh]">
+            <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-800">
+                <h3 class="font-bold text-sm text-slate-200 flex items-center gap-2">
+                    <i class="fa-solid fa-th text-sky-400"></i>
+                    Peta Lembar Jawab Soal
+                </h3>
+                <button onclick="toggleGridModal()" class="text-slate-400 hover:text-white p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Legend -->
+            <div class="flex flex-wrap items-center gap-3 text-[11px] text-slate-400 mb-4 bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+                <span class="flex items-center gap-1"><span class="w-3 h-3 bg-slate-800 border border-slate-700 rounded-sm"></span> Belum Didaftar</span>
+                <span class="flex items-center gap-1"><span class="w-3 h-3 bg-sky-600 rounded-sm"></span> Terjawab</span>
+                <span class="flex items-center gap-1"><span class="w-3 h-3 bg-amber-500 rounded-sm"></span> Ditandai</span>
+            </div>
+
+            <!-- Grid Numbers -->
+            <div id="gridNumbersContainer" class="grid grid-cols-5 sm:grid-cols-10 gap-2 overflow-y-auto p-1 mb-4 flex-1">
+                <!-- Grid buttons 1 to 50 generated dynamically -->
+            </div>
+
+            <button onclick="toggleGridModal()" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 rounded-xl transition">
+                Tutup Peta Soal
+            </button>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-slate-950 border-t border-slate-900 py-4 text-center text-xs text-slate-500">
+        Debian 13 System Administration Active Recall Quiz &bull; Powered by Single-Page Architecture
+    </footer>
+
+    <script>
+        /* All 50 Questions Data directly embedded */
+        const ALL_QUESTIONS = [
+            {
+                id: 1,
+                category: "Virtualisasi",
+                question: "Oracle VM VirtualBox dikategorikan sebagai Hypervisor Tipe 2. Manakah pernyataan yang paling tepat menggambarkan karakteristik hypervisor jenis ini?",
+                options: [
+                    "Berjalan langsung di atas perangkat keras (bare-metal) tanpa OS host.",
+                    "Berjalan di atas sistem operasi inang (Host OS) yang sudah terpasang.",
+                    "Hanya dapat menginstal Guest OS berbasis Linux.",
+                    "Mengakses hardware tanpa melalui layer driver OS Inang."
+                ],
+                answer: 1,
+                explanation: "Hypervisor Tipe 2 (Hosted Hypervisor) berjalan sebagai aplikasi di atas Sistem Operasi Inang (Host OS)."
+            },
+            {
+                id: 2,
+                category: "Virtualisasi",
+                question: "Mengapa dalam perancangan laboratorium virtual pada modul disarankan membuat VM SERVER sebagai template dasar terlebih dahulu?",
+                options: [
+                    "Menghemat kapasitas penggunaan memori RAM pada PC Host.",
+                    "Memungkinkan instalasi tanpa koneksi jaringan lokal.",
+                    "Untuk memastikan konsistensi instalasi dasar dan efisiensi waktu pembuatan server.",
+                    "Mengaktifkan fitur enkripsi otomatis pada berkas hard disk virtual."
+                ],
+                answer: 2,
+                explanation: "Membuat template dasar memastikan standar instalasi seragam dan mempercepat deployment VM turunan tanpa mengulang instalasi dari awal."
+            },
+            {
+                id: 3,
+                category: "Virtualisasi",
+                question: "Format file virtual hard disk bawaan yang digunakan oleh Oracle VM VirtualBox adalah...",
+                options: ["VMDK", "VHD", "QCOW2", "VDI"],
+                answer: 3,
+                explanation: "VDI (VirtualBox Disk Image) adalah format kontainer media penyimpanan virtual default VirtualBox."
+            },
+            {
+                id: 4,
+                category: "Virtualisasi",
+                question: "Saat membuat kerangka VM SERVER baru di VirtualBox menggunakan file berkas VDI yang telah disiapkan, opsi penyimpanan mana yang harus dipilih pada wizard?",
+                options: [
+                    "Create Virtual Machine Without a Virtual Hard Disk",
+                    "Dynamically allocated storage size",
+                    "Split into files less than 2GB",
+                    "Use existing virtual hard disk directly on wizard step 1"
+                ],
+                answer: 0,
+                explanation: "Menyeleksi opsi pembuatan tanpa Virtual Hard Disk memungkinkan kita menambahkan kontroler dan berkas VDI template secara presisi di menu Storage."
+            },
+            {
+                id: 5,
+                category: "Virtualisasi",
+                question: "Fitur VirtualBox yang digunakan untuk menggandakan VM SERVER menjadi server baru seperti VM INT-SERVER atau VM DNS SERVER dinamakan...",
+                options: ["Snapshot", "Export Appliance", "Clone", "Migrate"],
+                answer: 2,
+                explanation: "Fitur Clone menyalin konfigurasi dan disk Virtual Machine secara menyeluruh."
+            },
+            {
+                id: 6,
+                category: "Virtualisasi",
+                question: "Mode antarmuka jaringan VirtualBox yang digunakan agar antar-VM dapat saling berkomunikasi secara terisolasi tanpa terhubung ke jaringan luar PC Host adalah...",
+                options: ["Bridged Adapter", "Internal Network", "Host-only Adapter", "NAT Network"],
+                answer: 1,
+                explanation: "Internal Network mengisolasi trafik komunikasi antar-VM yang terhubung pada nama internal net yang sama."
+            },
+            {
+                id: 7,
+                category: "APT & Repositori",
+                question: "Pada Debian 13, berkas konfigurasi repositori baru yang terstruktur menggunakan format deb822 disimpan pada lokasi direktori...",
+                options: [
+                    "/etc/apt/sources.list",
+                    "/etc/apt/apt.conf.d/",
+                    "/etc/apt/sources.list.d/",
+                    "/var/lib/apt/lists/"
+                ],
+                answer: 2,
+                explanation: "Pada standar deb822 Debian modern, konfigurasi repositori eksternal diletakkan dalam berkas berakhiran `.sources` di `/etc/apt/sources.list.d/`."
+            },
+            {
+                id: 8,
+                category: "APT & Repositori",
+                question: "Dalam format repositori deb822 Debian 13, direktif yang digunakan untuk menentukan komponen repositori seperti `main` atau `contrib` adalah...",
+                options: ["URIs:", "Suites:", "Components:", "Types:"],
+                answer: 2,
+                explanation: "Struktur deb822 menggunakan blok kunci `Components:` untuk menentukan seksi repositori (main, contrib, non-free)."
+            },
+            {
+                id: 9,
+                category: "APT & Repositori",
+                question: "Perintah APT yang digunakan untuk menyinkronkan ulang indeks daftar paket lokal dengan server mirror pada Debian 13 adalah...",
+                options: ["apt update", "apt upgrade", "apt search", "apt autoremove"],
+                answer: 0,
+                explanation: "`apt update` memperbarui indeks daftar repositori lokal dari server sumber."
+            },
+            {
+                id: 10,
+                category: "APT & Repositori",
+                question: "Sebelum menerapkan konfigurasi repositori deb822 di Debian 13, langkah apa yang disarankan dilakukan terhadap berkas `/etc/apt/sources.list` bawaan?",
+                options: [
+                    "Menghapus total berkas tersebut dengan perintah rm.",
+                    "Menandai baris repositori lama sebagai komentar dengan karakter `#`.",
+                    "Memindahkan berkas ke direktori /tmp.",
+                    "Mengubah hak akses berkas menjadi read-only."
+                ],
+                answer: 1,
+                explanation: "Memberikan tanda komentar `#` menonaktifkan repositori format lama tanpa kehilangan backup konfigurasinya."
+            },
+            {
+                id: 11,
+                category: "APT & Repositori",
+                question: "Perintah yang berfungsi mengunduh dan menginstal versi terbaru dari seluruh paket terpasang di sistem Debian adalah...",
+                options: ["apt update", "apt upgrade", "apt dist-clean", "apt refresh"],
+                answer: 1,
+                explanation: "`apt upgrade` meningkatkan versi paket aplikasi terinstal ke rilis terbaru sesuai indeks paket."
+            },
+            {
+                id: 12,
+                category: "Jaringan & IP",
+                question: "Berkas sistem pada Debian yang berfungsi menyimpan nama identitas inang (hostname) mesin secara permanen adalah...",
+                options: ["/etc/hosts", "/etc/hostname", "/etc/sysconfig/network", "/etc/domainname"],
+                answer: 1,
+                explanation: "File `/etc/hostname` menyimpan string nama host mesin Linux Debian."
+            },
+            {
+                id: 13,
+                category: "Jaringan & IP",
+                question: "Apa fungsi utama dari berkas `/etc/hosts` dalam konfigurasi dasar jaringan sistem operasi Debian?",
+                options: [
+                    "Menyimpan IP resolver upstream DNS publik.",
+                    "Memetakan alamat IP ke nama host secara lokal tanpa melalui query DNS.",
+                    "Mengatur pemetaan VLAN tag antarmuka fisik.",
+                    "Menyimpan riwayat alamat URL web yang pernah dikunjungi."
+                ],
+                answer: 1,
+                explanation: "Berkas `/etc/hosts` berfungsi sebagai pencarian DNS statis lokal sebelum sistem melempar query ke DNS Server."
+            },
+            {
+                id: 14,
+                category: "Jaringan & IP",
+                question: "Berkas konfigurasi utama untuk mengatur alamat IP statis pada antarmuka jaringan di Debian 13 terletak pada jalur...",
+                options: [
+                    "/etc/network/interfaces",
+                    "/etc/sysconfig/network-scripts/ifcfg-eth0",
+                    "/etc/netplan/01-netcfg.yaml",
+                    "/etc/systemd/network.conf"
+                ],
+                answer: 0,
+                explanation: "Lokasi standar utilitas `ifupdown` di Debian tersimpan pada `/etc/network/interfaces`."
+            },
+            {
+                id: 15,
+                category: "Jaringan & IP",
+                question: "Sintaksis baris konfigurasi yang benar pada berkas `/etc/network/interfaces` untuk menetapkan alamat IP statis pada antarmuka `eth0` adalah...",
+                options: [
+                    "iface eth0 inet dhcp",
+                    "iface eth0 inet static",
+                    "set eth0 static ip",
+                    "auto eth0 static"
+                ],
+                answer: 1,
+                explanation: "Blok `iface eth0 inet static` menginstruksikan sistem bahwa interface eth0 dikonfigurasi manual secara statis."
+            },
+            {
+                id: 16,
+                category: "Jaringan & IP",
+                question: "Perintah CLI yang digunakan untuk menerapkan ulang perubahan konfigurasi jaringan di Debian setelah menyunting berkas interfaces adalah...",
+                options: [
+                    "systemctl restart networking",
+                    "systemctl reload network-manager",
+                    "ifdown --all",
+                    "service ip restart"
+                ],
+                answer: 0,
+                explanation: "Unit daemon networking di-restart menggunakan `systemctl restart networking`."
+            },
+            {
+                id: 17,
+                category: "Jaringan & IP",
+                question: "Berdasarkan skema pengalamatan IP di bab praktikum, prefix `/25` memiliki nilai subnet mask sebesar...",
+                options: [
+                    "255.255.255.0",
+                    "255.255.255.128",
+                    "255.255.255.192",
+                    "255.255.255.224"
+                ],
+                answer: 1,
+                explanation: "Prefix /25 memiliki 25 bit bernilai 1, yang bernilai desimal 255.255.255.128."
+            },
+            {
+                id: 18,
+                category: "DHCP Server",
+                question: "Paket aplikasi utama yang diinstal untuk membangun layanan DHCP Server pada Debian 13 sesuai panduan adalah...",
+                options: ["dnsmasq", "isc-dhcp-server", "dhcpd-standalone", "kea-dhcp4"],
+                answer: 1,
+                explanation: "`isc-dhcp-server` merupakan paket DHCP daemon paling umum digunakan di lingkungan Linux Debian."
+            },
+            {
+                id: 19,
+                category: "DHCP Server",
+                question: "Berkas konfigurasi yang digunakan untuk menentukan nama antarmuka jaringan (interface) yang akan melayani permintaan DHCP pada Debian adalah...",
+                options: [
+                    "/etc/dhcp/dhcpd.conf",
+                    "/etc/default/isc-dhcp-server",
+                    "/etc/network/dhcp.conf",
+                    "/etc/sysconfig/dhcp"
+                ],
+                answer: 1,
+                explanation: "Variabel `INTERFACESv4=\"ethX\"` didefinisikan pada `/etc/default/isc-dhcp-server`."
+            },
+            {
+                id: 20,
+                category: "DHCP Server",
+                question: "Lokasi berkas utama untuk mendefinisikan blok subnet, rentang IP (range), gateway, dan name server pada ISC DHCP Server adalah...",
+                options: [
+                    "/etc/dhcp/dhcpd.conf",
+                    "/etc/isc-dhcp/server.conf",
+                    "/var/lib/dhcp/dhcpd.leases",
+                    "/etc/default/dhcp"
+                ],
+                answer: 0,
+                explanation: "Berkas `/etc/dhcp/dhcpd.conf` menampung direktif global dan deklarasi blok subnet DHCP."
+            },
+            {
+                id: 21,
+                category: "DHCP Server",
+                question: "Direktif pada `dhcpd.conf` yang digunakan untuk memberikan alamat gateway default kepada klien DHCP adalah...",
+                options: ["option domain-name-servers", "option routers", "option broadcast-address", "default-lease-time"],
+                answer: 1,
+                explanation: "Direktif `option routers <IP_Gateway>;` mendistribusikan parameter default gateway ke klien."
+            },
+            {
+                id: 22,
+                category: "DHCP Server",
+                question: "Direktif pada berkas `dhcpd.conf` yang berfungsi menginformasikan alamat DNS server kepada klien yang meminta alokasi IP adalah...",
+                options: ["option domain-name", "option domain-name-servers", "option dns-hosts", "server-name"],
+                answer: 1,
+                explanation: "Direktif `option domain-name-servers` menentukan daftar server IP resolver DNS klien."
+            },
+            {
+                id: 23,
+                category: "DHCP Server",
+                question: "Jika layanan `isc-dhcp-server` mengalami kegagalan saat di-start, kemungkinan kesalahan konfigurasi umum terjadi karena...",
+                options: [
+                    "Port 53 telah digunakan oleh BIND9.",
+                    "Antarmuka (interface) yang dipilih belum memiliki alamat IP yang sekelas dengan subnet di dhcpd.conf.",
+                    "Layanan Apache2 sedang berjalan.",
+                    "Berkas /etc/resolv.conf kosong."
+                ],
+                answer: 1,
+                explanation: "DHCP Server menolak bind socket jika IP statis interface lokal tidak berada dalam jangkauan blok subnet yang dideklarasikan di `dhcpd.conf`."
+            },
+            {
+                id: 24,
+                category: "Router & Firewall",
+                question: "Parameter kernel Linux pada berkas `/etc/sysctl.conf` yang harus diaktifkan agar sistem dapat meneruskan paket data antar-antarmuka (fungsionalitas router) adalah...",
+                options: [
+                    "net.ipv4.ip_forward=1",
+                    "net.ipv4.conf.all.forwarding=0",
+                    "ip.forwarding.enable=true",
+                    "routing.ipv4.forward=1"
+                ],
+                answer: 0,
+                explanation: "Membuka nilai `net.ipv4.ip_forward=1` mengaktifkan mekanisme packet routing IP forwarding di Linux Kernel."
+            },
+            {
+                id: 25,
+                category: "Router & Firewall",
+                question: "Perintah CLI yang digunakan untuk memuat ulang dan menerapkan parameter sysctl dari berkas `/etc/sysctl.conf` tanpa merestart sistem adalah...",
+                options: ["sysctl -r", "sysctl -p", "sysctl --reload", "systemctl restart sysctl"],
+                answer: 1,
+                explanation: "Opsi `sysctl -p` memuat ulang pengaturan berkas konfigurasi kernel `/etc/sysctl.conf` secara instan."
+            },
+            {
+                id: 26,
+                category: "Router & Firewall",
+                question: "Perangkat lunak Subsistem Firewall dan pemfilteran paket modern pengganti iptables yang digunakan pada Debian 13 adalah...",
+                options: ["iptables", "ufw", "nftables", "firewalld"],
+                answer: 2,
+                explanation: "`nftables` adalah subsistem firewall standar modern di Debian menggantikan framework iptables lama."
+            },
+            {
+                id: 27,
+                category: "Router & Firewall",
+                question: "Apa fungsi utama dari penerapan aksi Masquerade pada konfigurasi NAT Gateway antarmuka publik (WAN)?",
+                options: [
+                    "Mengubah alamat IP asal paket lokal menjadi alamat IP antarmuka luar secara otomatis.",
+                    "Memblokir seluruh lalu lintas incoming ICMP ping.",
+                    "Mengarahkan port HTTP ke HTTPS secara otomatis.",
+                    "Menyembunyikan alamat MAC address server."
+                ],
+                answer: 0,
+                explanation: "Masquerading melakukan Source NAT dinamis, mengganti IP privat klien menjadi IP antarmuka keluar router."
+            },
+            {
+                id: 28,
+                category: "Router & Firewall",
+                question: "Perbedaan mendasar antara Source NAT (SNAT) dan Destination NAT (DNAT) terletak pada...",
+                options: [
+                    "SNAT bekerja pada layer 3, DNAT pada layer 7.",
+                    "SNAT mengedit alamat IP asal paket, sedangkan DNAT mengedit alamat IP tujuan paket.",
+                    "SNAT khusus IPv6, DNAT khusus IPv4.",
+                    "SNAT digunakan pada server lokal, DNAT pada router publik."
+                ],
+                answer: 1,
+                explanation: "SNAT mengubah IP asal (biasanya outgoing), sedangkan DNAT mengubah IP tujuan paket (Port Forwarding)."
+            },
+            {
+                id: 29,
+                category: "Router & Firewall",
+                question: "Perintah systemctl yang digunakan untuk memastikan aturan nftables dimuat secara otomatis saat sistem booting adalah...",
+                options: ["nftables enable onboot", "systemctl enable nftables", "systemctl start nftables", "nft save-rules"],
+                answer: 1,
+                explanation: "`systemctl enable nftables` mendaftarkan unit service nftables ke startup systemd."
+            },
+            {
+                id: 30,
+                category: "DNS Server",
+                question: "Paket perangkat lunak utama yang diinstal untuk membuat DNS Server pada sistem operasi Debian 13 adalah...",
+                options: ["unbound", "dnsmasq", "bind9", "powerdns"],
+                answer: 2,
+                explanation: "`bind9` adalah server DNS yang paling populer dan luas digunakan di lingkungan Unix/Linux."
+            },
+            {
+                id: 31,
+                category: "DNS Server",
+                question: "Berkas konfigurasi BIND9 di Debian yang digunakan untuk memetakan nama zona forward dan zone reverse lokal adalah...",
+                options: [
+                    "/etc/bind/named.conf",
+                    "/etc/bind/named.conf.options",
+                    "/etc/bind/named.conf.local",
+                    "/etc/bind/db.local"
+                ],
+                answer: 2,
+                explanation: "Berkas `/etc/bind/named.conf.local` disiapkan khusus untuk deklarasi blok `zone` domain lokal."
+            },
+            {
+                id: 32,
+                category: "DNS Server",
+                question: "Tipe DNS Record yang digunakan pada berkas zone reverse untuk memetakan alamat IP kembali menjadi nama domain adalah...",
+                options: ["A Record", "CNAME Record", "MX Record", "PTR Record"],
+                answer: 3,
+                explanation: "PTR (Pointer) Record digunakan khusus pada zone reverse DNS untuk pemetaan Reverse Lookup (IP -> Domain)."
+            },
+            {
+                id: 33,
+                category: "DNS Server",
+                question: "Tipe DNS Record yang memetakan nama hostname/domain secara langsung ke IPv4 pada berkas zone forward adalah...",
+                options: ["A", "AAAA", "NS", "TXT"],
+                answer: 0,
+                explanation: "Record `A` (Address) memetakan nama domain ke alamat IP versi 4."
+            },
+            {
+                id: 34,
+                category: "DNS Server",
+                question: "Pada berkas `named.conf.options`, opsi yang digunakan untuk meneruskan permintaan resolusi nama domain luar yang tidak diketahui ke DNS server publik adalah...",
+                options: ["redirect-dns { ... };", "forwarders { ... };", "upstream-servers { ... };", "external-dns { ... };"],
+                answer: 1,
+                explanation: "Blok `forwarders { IP_PUBLIC; };` meneruskan DNS query luar (recursive lookup) ke DNS upstream."
+            },
+            {
+                id: 35,
+                category: "DNS Server",
+                question: "Perintah utilitas bawaan BIND9 yang digunakan untuk memeriksa keabsahan sintaksis dan kesalahan penulisan pada berkas zona DNS adalah...",
+                options: ["named-checkconf", "named-checkzone", "dig check", "nslookup --check"],
+                answer: 1,
+                explanation: "Utilitas `named-checkzone <nama_domain> <file_zone>` digunakan memvalidasi sintaks berkas zone."
+            },
+            {
+                id: 36,
+                category: "PXE Boot",
+                question: "Protokol transfer file sederhana tanpa autentikasi yang digunakan oleh PXE Boot Server untuk mengirimkan berkas bootloader awal ke klien adalah...",
+                options: ["FTP", "HTTP", "TFTP", "SFTP"],
+                answer: 2,
+                explanation: "TFTP (Trivial File Transfer Protocol) berbasis UDP digunakan pada proses booting awal PXE karena sangat ringan."
+            },
+            {
+                id: 37,
+                category: "PXE Boot",
+                question: "Paket utama yang diinstal di Debian 13 untuk menyediakan layanan server TFTP pada pembuatan PXE Boot Server adalah...",
+                options: ["tftpd-hpa", "vsftpd", "proftpd", "atftpd"],
+                answer: 0,
+                explanation: "Daemon `tftpd-hpa` merupakan standar server TFTP yang direkomendasikan di Debian."
+            },
+            {
+                id: 38,
+                category: "PXE Boot",
+                question: "Dua parameter penting yang harus ditambahkan pada berkas `dhcpd.conf` agar klien DHCP diarahkan ke PXE Boot Server saat proses booting jaringan adalah...",
+                options: [
+                    "next-server dan filename",
+                    "pxe-server dan boot-file",
+                    "tftp-host dan image-name",
+                    "option pxe-address"
+                ],
+                answer: 0,
+                explanation: "Parameter `next-server` (IP TFTP) dan `filename` (berkas bootloader) memberi tahu klien PXE lokasi berkas boot."
+            },
+            {
+                id: 39,
+                category: "PXE Boot",
+                question: "Lokasi direktori root default tempat menyimpan berkas-berkas sistem PXE Boot pada daemon `tftpd-hpa` di Debian adalah...",
+                options: ["/var/tftp", "/srv/tftp", "/etc/tftpboot", "/usr/share/tftp"],
+                answer: 1,
+                explanation: "Jalur direktori bawaan root TFTP pada Debian modern berada pada `/srv/tftp`."
+            },
+            {
+                id: 40,
+                category: "LAMP & SSL",
+                question: "Layanan Manajemen Basis Data (Database Management System) standar yang digunakan pada tumpukan LAMP Stack di VM WEB SERVER adalah...",
+                options: ["PostgreSQL", "SQLite3", "MariaDB", "MongoDB"],
+                answer: 2,
+                explanation: "MariaDB merupakan RDBMS standar pengganti MySQL bawaan repositori Debian."
+            },
+            {
+                id: 41,
+                category: "LAMP & SSL",
+                question: "Perangkat lunak CLI yang digunakan untuk membangkitkan kunci privat (private key) dan menandatangani sertifikat SSL pada Private Certificate Authority (CA) adalah...",
+                options: ["certbot", "openssl", "gpg", "keytool"],
+                answer: 1,
+                explanation: "Perkakas `openssl` digunakan mengelola kunci enkripsi, CSR, dan sertifikat SSL/TLS."
+            },
+            {
+                id: 42,
+                category: "LAMP & SSL",
+                question: "Direktif pada berkas VirtualHost Apache HTTPS yang digunakan untuk menunjukkan lokasi berkas sertifikat SSL utama (`.crt`) adalah...",
+                options: ["SSLCertificateFile", "SSLCertificateKeyFile", "SSLCACertificatePath", "SSLEngine"],
+                answer: 0,
+                explanation: "Direktif `SSLCertificateFile` mengarahkan Apache ke berkas sertifikat publik `.crt`."
+            },
+            {
+                id: 43,
+                category: "LAMP & SSL",
+                question: "Di mana lokasi direktori standar di Debian/Ubuntu untuk menempatkan berkas sertifikat Root CA publik (`ca.crt`) agar dipercayai oleh seluruh sistem lokal?",
+                options: [
+                    "/etc/ssl/certs/",
+                    "/usr/local/share/ca-certificates/",
+                    "/var/lib/ca-certificates/",
+                    "/etc/pki/ca-trust/"
+                ],
+                answer: 1,
+                explanation: "Sertifikat custom CA diletakkan di `/usr/local/share/ca-certificates/` sebelum meng-update sertifikat sistem."
+            },
+            {
+                id: 44,
+                category: "LAMP & SSL",
+                question: "Perintah CLI Debian yang wajib dijalankan setelah menambahkan sertifikat Root CA baru ke direktori `/usr/local/share/ca-certificates/` adalah...",
+                options: ["update-ca-certificates", "cert-sync --reload", "systemctl reload ca-certs", "apt update-ca"],
+                answer: 0,
+                explanation: "Perintah `update-ca-certificates` meregenerasi berkas bundle CA tepercaya di `/etc/ssl/certs`."
+            },
+            {
+                id: 45,
+                category: "FTPS Server",
+                question: "Aplikasi FTP Server aman dan sangat cepat yang digunakan pada VM FILE SERVER sesuai panduan praktikum adalah...",
+                options: ["pure-ftpd", "proftpd", "vsftpd", "filezilla-server"],
+                answer: 2,
+                explanation: "`vsftpd` (Very Secure FTP Daemon) adalah server FTP standar yang berfokus pada keamanan dan kecepatan."
+            },
+            {
+                id: 46,
+                category: "FTPS Server",
+                question: "Parameter pada berkas `vsftpd.conf` yang harus diaktifkan agar layanan FTP mewajibkan pengamanan koneksi menggunakan SSL/TLS (FTPS) adalah...",
+                options: ["force_local_logins_ssl=YES", "ssl_enable=YES", "ftps_active=TRUE", "require_ssl=YES"],
+                answer: 1,
+                explanation: "Direktif `ssl_enable=YES` mengaktifkan dukungan enkripsi SSL/TLS pada daemon vsftpd."
+            },
+            {
+                id: 47,
+                category: "FTPS Server",
+                question: "Parameter pada `vsftpd.conf` yang berfungsi mengurung pengguna FTP agar tidak bisa melakukan penjelajahan direktori di luar folder home mereka adalah...",
+                options: ["chroot_local_user=YES", "isolate_home_dir=ENABLE", "restrict_user_path=YES", "allow_writeable_chroot=NO"],
+                answer: 0,
+                explanation: "`chroot_local_user=YES` membatasi navigasi direktori pengguna lokal hanya di dalam direktori home mereka."
+            },
+            {
+                id: 48,
+                category: "Mail Server",
+                question: "Perangkat lunak yang bertindak sebagai Mail Transfer Agent (MTA) untuk menangani pengiriman email (SMTP) pada VM MAIL SERVER adalah...",
+                options: ["Dovecot", "Postfix", "Exim", "Sendmail"],
+                answer: 1,
+                explanation: "`Postfix` bertindak sebagai MTA (Mail Transfer Agent) yang bertanggung jawab untuk pertukaran email via protokol SMTP."
+            },
+            {
+                id: 49,
+                category: "Mail Server",
+                question: "Perangkat lunak yang berfungsi sebagai Mail Delivery Agent (MDA) menyediakan protokol pencarian e-mail (IMAP/POP3) pada Debian 13 adalah...",
+                options: ["Postfix", "Dovecot", "Courier", "Roundcube"],
+                answer: 1,
+                explanation: "`Dovecot` menyediakan layanan POP3 dan IMAP agar email yang masuk dapat dibaca oleh Email Client."
+            },
+            {
+                id: 50,
+                category: "Mail Server",
+                question: "Parameter konfigurasi pada `/etc/postfix/main.cf` yang menetapkan agar setiap e-mail disimpan dalam direktori format folder mandiri setiap pengguna adalah...",
+                options: ["mail_spool = /var/mail/", "home_mailbox = Maildir/", "mailbox_command = procmail", "format_store = Mailbox"],
+                answer: 1,
+                explanation: "`home_mailbox = Maildir/` mengonfigurasi penyimpanan email dalam struktur folder Maildir di direktori home pengguna."
+            }
+        ];
+
+        // State variables
+        let activeQuestions = [];
+        let currentIndex = 0;
+        let userAnswers = {}; // { questionId: chosenOptionIndex }
+        let bookmarked = new Set();
+        let currentMode = 'exam'; // 'exam' or 'practice'
+        let timerInterval = null;
+        let secondsElapsed = 0;
+        let isSoundEnabled = true;
+
+        // Audio Context Synthesizer (No external sound files required)
+        let audioCtx = null;
+        function playAudioFeedback(type) {
+            if (!isSoundEnabled) return;
+            try {
+                if (!audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                if (type === 'correct') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+                    osc.frequency.exponentialRampToValueAtTime(659.25, audioCtx.currentTime + 0.15); // E5
+                    gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.3);
+                } else if (type === 'wrong') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(220, audioCtx.currentTime); // A3
+                    osc.frequency.exponentialRampToValueAtTime(130, audioCtx.currentTime + 0.2); // C3
+                    gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.3);
+                } else if (type === 'click') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+                    gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.05);
+                }
+            } catch (e) {
+                console.log("Audio not supported or blocked");
+            }
+        }
+
+        function toggleSound() {
+            isSoundEnabled = !isSoundEnabled;
+            const icon = document.getElementById('soundIcon');
+            if (isSoundEnabled) {
+                icon.className = 'fa-solid fa-volume-high text-emerald-400';
+            } else {
+                icon.className = 'fa-solid fa-volume-xmark text-slate-500';
+            }
+        }
+
+        // Initialize High Score
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedTopScore = localStorage.getItem('debian13_quiz_topscore') || 0;
+            document.getElementById('topScoreDisplay').innerText = savedTopScore;
+        });
+
+        function selectMode(mode) {
+            currentMode = mode;
+            playAudioFeedback('click');
+        }
+
+        function startQuiz() {
+            playAudioFeedback('click');
+            const selectedCat = document.getElementById('categoryFilter').value;
+
+            // Filter questions
+            if (selectedCat === 'ALL') {
+                activeQuestions = [...ALL_QUESTIONS];
+            } else {
+                activeQuestions = ALL_QUESTIONS.filter(q => q.category === selectedCat);
+            }
+
+            if (activeQuestions.length === 0) {
+                alert('Tidak ada soal pada kategori ini.');
+                return;
+            }
+
+            // Reset States
+            currentIndex = 0;
+            userAnswers = {};
+            bookmarked.clear();
+            secondsElapsed = 0;
+
+            // Hide Start & Result, Show Quiz Header & Card
+            document.getElementById('startScreen').classList.add('hidden');
+            document.getElementById('resultScreen').classList.add('hidden');
+            document.getElementById('quizHeader').classList.remove('hidden');
+            document.getElementById('questionCard').classList.remove('hidden');
+
+            // Setup Badges
+            document.getElementById('modeBadge').innerText = currentMode === 'exam' ? 'Mode Simulasi Ujian' : 'Mode Latihan';
+
+            // Start Timer
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                secondsElapsed++;
+                const mins = String(Math.floor(secondsElapsed / 60)).padStart(2, '0');
+                const secs = String(secondsElapsed % 60).padStart(2, '0');
+                document.getElementById('timerText').innerText = `${mins}:${secs}`;
+            }, 1000);
+
+            renderGridModalButtons();
+            renderQuestion();
+        }
+
+        function renderQuestion() {
+            const q = activeQuestions[currentIndex];
+
+            // Header info
+            document.getElementById('categoryBadge').innerText = q.category;
+            document.getElementById('questionProgressText').innerText = `Soal ${currentIndex + 1} dari ${activeQuestions.length}`;
+            
+            // Progress Bar
+            const progPercent = ((currentIndex + 1) / activeQuestions.length) * 100;
+            document.getElementById('progressBar').style.width = `${progPercent}%`;
+
+            // Question text
+            document.getElementById('questionText').innerHTML = `<span class="text-rose-500 mr-2">${q.id}.</span> ${q.question}`;
+
+            // Render Options
+            const container = document.getElementById('optionsContainer');
+            container.innerHTML = '';
+
+            const chosenOpt = userAnswers[q.id];
+            const hasAnswered = chosenOpt !== undefined;
+
+            q.options.forEach((optText, optIdx) => {
+                const btn = document.createElement('button');
+                btn.className = "w-full text-left p-4 rounded-2xl border transition-all duration-200 text-xs sm:text-sm font-medium flex items-center justify-between group cursor-pointer ";
+
+                let optClass = "bg-slate-950/60 border-slate-800 text-slate-200 hover:border-slate-700 hover:bg-slate-800/50";
+                let badgeClass = "bg-slate-800 text-slate-400 group-hover:bg-slate-700 group-hover:text-white";
+                let iconSymbol = "";
+
+                if (hasAnswered) {
+                    if (currentMode === 'practice') {
+                        // In Practice mode: Show green for correct, red for selected wrong
+                        if (optIdx === q.answer) {
+                            optClass = "bg-emerald-950/40 border-emerald-500/80 text-emerald-200";
+                            badgeClass = "bg-emerald-600 text-white";
+                            iconSymbol = '<i class="fa-solid fa-check text-emerald-400 text-base"></i>';
+                        } else if (optIdx === chosenOpt) {
+                            optClass = "bg-rose-950/40 border-rose-500/80 text-rose-200";
+                            badgeClass = "bg-rose-600 text-white";
+                            iconSymbol = '<i class="fa-solid fa-xmark text-rose-400 text-base"></i>';
+                        } else {
+                            optClass = "bg-slate-950/30 border-slate-800/50 text-slate-500 opacity-60";
+                        }
+                    } else {
+                        // Exam Mode: Just show selection
+                        if (optIdx === chosenOpt) {
+                            optClass = "bg-sky-950/60 border-sky-500 text-sky-100 font-semibold";
+                            badgeClass = "bg-sky-600 text-white";
+                            iconSymbol = '<i class="fa-solid fa-circle-check text-sky-400"></i>';
+                        }
+                    }
+                }
+
+                btn.className += optClass;
+
+                const labelLetter = String.fromCharCode(65 + optIdx); // A, B, C, D
+                btn.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <span class="w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs ${badgeClass} shrink-0">
+                            ${labelLetter}
+                        </span>
+                        <span>${optText}</span>
+                    </div>
+                    <div>${iconSymbol}</div>
+                `;
+
+                btn.onclick = () => selectOption(q.id, optIdx);
+                container.appendChild(btn);
+            });
+
+            // Explanation box handling
+            const expBox = document.getElementById('explanationBox');
+            if (hasAnswered && currentMode === 'practice') {
+                expBox.classList.remove('hidden');
+                document.getElementById('explanationText').innerText = q.explanation;
+            } else {
+                expBox.classList.add('hidden');
+            }
+
+            // Flag Icon state
+            const flagIcon = document.getElementById('flagIcon');
+            if (bookmarked.has(q.id)) {
+                flagIcon.className = "fa-solid fa-bookmark text-amber-400";
+            } else {
+                flagIcon.className = "fa-regular fa-bookmark";
+            }
+
+            // Nav buttons state
+            document.getElementById('prevBtn').disabled = currentIndex === 0;
+
+            const nextBtn = document.getElementById('nextBtn');
+            const submitBtn = document.getElementById('submitQuizBtn');
+
+            if (currentIndex === activeQuestions.length - 1) {
+                nextBtn.classList.add('hidden');
+                submitBtn.classList.remove('hidden');
+            } else {
+                nextBtn.classList.remove('hidden');
+                submitBtn.classList.add('hidden');
+            }
+
+            updateGridModalState();
+        }
+
+        function selectOption(qId, optIdx) {
+            const q = activeQuestions[currentIndex];
+            userAnswers[qId] = optIdx;
+
+            if (currentMode === 'practice') {
+                if (optIdx === q.answer) {
+                    playAudioFeedback('correct');
+                } else {
+                    playAudioFeedback('wrong');
+                }
+            } else {
+                playAudioFeedback('click');
+            }
+
+            renderQuestion();
+        }
+
+        function navigateQuestion(direction) {
+            playAudioFeedback('click');
+            const newIdx = currentIndex + direction;
+            if (newIdx >= 0 && newIdx < activeQuestions.length) {
+                currentIndex = newIdx;
+                renderQuestion();
+            }
+        }
+
+        function toggleBookmarkCurrent() {
+            const qId = activeQuestions[currentIndex].id;
+            if (bookmarked.has(qId)) {
+                bookmarked.delete(qId);
+            } else {
+                bookmarked.add(qId);
+            }
+            playAudioFeedback('click');
+            renderQuestion();
+        }
+
+        function toggleGridModal() {
+            playAudioFeedback('click');
+            const modal = document.getElementById('gridModal');
+            modal.classList.toggle('hidden');
+        }
+
+        function renderGridModalButtons() {
+            const container = document.getElementById('gridNumbersContainer');
+            container.innerHTML = '';
+
+            activeQuestions.forEach((q, idx) => {
+                const btn = document.createElement('button');
+                btn.id = `gridBtn-${idx}`;
+                btn.innerText = idx + 1;
+                btn.className = "h-10 rounded-xl font-bold text-xs transition border flex items-center justify-center ";
+                
+                btn.onclick = () => {
+                    currentIndex = idx;
+                    renderQuestion();
+                    toggleGridModal();
+                };
+
+                container.appendChild(btn);
+            });
+
+            updateGridModalState();
+        }
+
+        function updateGridModalState() {
+            activeQuestions.forEach((q, idx) => {
+                const btn = document.getElementById(`gridBtn-${idx}`);
+                if (!btn) return;
+
+                const isAnswered = userAnswers[q.id] !== undefined;
+                const isBookmarked = bookmarked.has(q.id);
+                const isCurrent = idx === currentIndex;
+
+                let cls = "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700";
+
+                if (isBookmarked) {
+                    cls = "bg-amber-500/20 border-amber-500 text-amber-300";
+                } else if (isAnswered) {
+                    cls = "bg-sky-600 border-sky-500 text-white";
+                }
+
+                if (isCurrent) {
+                    cls += " ring-2 ring-rose-500 ring-offset-2 ring-offset-slate-900";
+                }
+
+                btn.className = `h-10 rounded-xl font-bold text-xs transition border flex items-center justify-center ${cls}`;
+            });
+        }
+
+        function confirmFinishQuiz() {
+            const unansweredCount = activeQuestions.length - Object.keys(userAnswers).length;
+            if (unansweredCount > 0) {
+                if (!confirm(`Masih ada ${unansweredCount} soal yang belum dijawab. Yakin ingin menyelesaikan kuis?`)) {
+                    return;
+                }
+            }
+            finishQuiz();
+        }
+
+        function finishQuiz() {
+            clearInterval(timerInterval);
+            playAudioFeedback('correct');
+
+            let correctCount = 0;
+            activeQuestions.forEach(q => {
+                if (userAnswers[q.id] === q.answer) {
+                    correctCount++;
+                }
+            });
+
+            const total = activeQuestions.length;
+            const percentage = Math.round((correctCount / total) * 100);
+
+            // Update Top Score LocalStorage
+            const prevTop = parseInt(localStorage.getItem('debian13_quiz_topscore') || '0');
+            if (percentage > prevTop) {
+                localStorage.setItem('debian13_quiz_topscore', percentage);
+                document.getElementById('topScoreDisplay').innerText = percentage;
+            }
+
+            // Display UI Stats
+            document.getElementById('finalScoreVal').innerText = `${percentage}%`;
+            document.getElementById('correctCountVal').innerText = correctCount;
+            document.getElementById('wrongCountVal').innerText = total - correctCount;
+
+            const mins = String(Math.floor(secondsElapsed / 60)).padStart(2, '0');
+            const secs = String(secondsElapsed % 60).padStart(2, '0');
+            document.getElementById('timeTakenVal').innerText = `${mins}:${secs}`;
+
+            // Score Badge styling
+            const iconBox = document.getElementById('scoreBadgeIcon');
+            if (percentage >= 80) {
+                iconBox.className = "w-20 h-20 mx-auto mb-4 rounded-full flex items-center justify-center text-3xl font-extrabold border-4 bg-emerald-950/60 border-emerald-500 text-emerald-400";
+                iconBox.innerHTML = '<i class="fa-solid fa-trophy"></i>';
+                document.getElementById('resultTitle').innerText = "Luar Biasa! Sangat Kompeten";
+            } else if (percentage >= 60) {
+                iconBox.className = "w-20 h-20 mx-auto mb-4 rounded-full flex items-center justify-center text-3xl font-extrabold border-4 bg-sky-950/60 border-sky-500 text-sky-400";
+                iconBox.innerHTML = '<i class="fa-solid fa-medal"></i>';
+                document.getElementById('resultTitle').innerText = "Hasil Cukup Baik";
+            } else {
+                iconBox.className = "w-20 h-20 mx-auto mb-4 rounded-full flex items-center justify-center text-3xl font-extrabold border-4 bg-rose-950/60 border-rose-500 text-rose-400";
+                iconBox.innerHTML = '<i class="fa-solid fa-book-open"></i>';
+                document.getElementById('resultTitle').innerText = "Perlu Belajar Lagi";
+            }
+
+            // Render Detailed Review List
+            renderReviewList();
+
+            // Toggle Screens
+            document.getElementById('quizHeader').classList.add('hidden');
+            document.getElementById('questionCard').classList.add('hidden');
+            document.getElementById('resultScreen').classList.remove('hidden');
+        }
+
+        function renderReviewList() {
+            const container = document.getElementById('reviewContainer');
+            container.innerHTML = '';
+            document.getElementById('reviewCountText').innerText = `${activeQuestions.length} Soal`;
+
+            activeQuestions.forEach((q, idx) => {
+                const userChoice = userAnswers[q.id];
+                const isCorrect = userChoice === q.answer;
+                const isUnanswered = userChoice === undefined;
+
+                const card = document.createElement('div');
+                card.className = "p-4 rounded-2xl bg-slate-950 border border-slate-800 text-xs space-y-2";
+
+                let statusBadge = '';
+                if (isCorrect) {
+                    statusBadge = '<span class="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold">Benar</span>';
+                } else if (isUnanswered) {
+                    statusBadge = '<span class="px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 font-bold">Tidak Dijawab</span>';
+                } else {
+                    statusBadge = '<span class="px-2 py-0.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20 font-bold">Salah</span>';
+                }
+
+                const userOptText = isUnanswered ? "-" : q.options[userChoice];
+                const correctOptText = q.options[q.answer];
+
+                card.innerHTML = `
+                    <div class="flex justify-between items-center gap-2">
+                        <span class="font-bold text-slate-300">Soal #${idx + 1} (${q.category})</span>
+                        ${statusBadge}
+                    </div>
+                    <div class="text-slate-200 font-medium">${q.question}</div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 text-[11px]">
+                        <div class="p-2 rounded-lg bg-slate-900 border border-slate-800">
+                            <span class="text-slate-400 block">Jawaban Anda:</span>
+                            <span class="${isCorrect ? 'text-emerald-400' : 'text-rose-400'} font-semibold">${userOptText}</span>
+                        </div>
+                        <div class="p-2 rounded-lg bg-slate-900 border border-slate-800">
+                            <span class="text-slate-400 block">Kunci Jawaban:</span>
+                            <span class="text-emerald-400 font-semibold">${correctOptText}</span>
+                        </div>
+                    </div>
+                    <div class="text-slate-400 bg-slate-900/50 p-2 rounded-lg border border-slate-800/60 leading-relaxed mt-1">
+                        <span class="text-sky-400 font-bold">Pembahasan:</span> ${q.explanation}
+                    </div>
+                `;
+
+                container.appendChild(card);
+            });
+        }
+
+        function reviewInCardMode() {
+            currentMode = 'practice';
+            currentIndex = 0;
+            document.getElementById('resultScreen').classList.add('hidden');
+            document.getElementById('quizHeader').classList.remove('hidden');
+            document.getElementById('questionCard').classList.remove('hidden');
+            renderQuestion();
+        }
+
+        function resetToStartScreen() {
+            clearInterval(timerInterval);
+            document.getElementById('resultScreen').classList.add('hidden');
+            document.getElementById('quizHeader').classList.add('hidden');
+            document.getElementById('questionCard').classList.add('hidden');
+            document.getElementById('startScreen').classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
